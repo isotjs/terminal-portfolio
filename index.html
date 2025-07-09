@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal İsot</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .window {
+            background: #0f0f1a;
+            border: 1px solid #3a3a4a;
+            border-radius: 12px;
+            margin: 20px;
+            width: 90%;
+            max-width: 1000px;
+            height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .window:hover {
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        }
+        
+        .window-header {
+            background: linear-gradient(to bottom, #3a3a4a 0%, #2a2a3a 100%);
+            padding: 10px 16px;
+            border-bottom: 1px solid #3a3a4a;
+            display: flex;
+            align-items: center;
+            border-radius: 12px 12px 0 0;
+            user-select: none;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 10px;
+            margin-right: 16px;
+        }
+        
+        .control-btn {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .control-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .close { background: #ff5f56; }
+        .minimize { background: #ffbd2e; }
+        .maximize { background: #27ca3f; }
+        
+        .window-title {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            flex-grow: 1;
+            text-align: center;
+        }
+        
+        .terminal {
+            flex: 1;
+            background: #0f0f1a;
+            padding: 16px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+            scroll-behavior: smooth;
+        }
+        
+        .terminal::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .terminal::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+        
+        .terminal::-webkit-scrollbar-thumb {
+            background: #3a3a4a;
+            border-radius: 4px;
+        }
+        
+        .output-line {
+            margin-bottom: 8px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .prompt {
+            color: #4cc9f0;
+            font-weight: 500;
+        }
+        
+        .error {
+            color: #f72585;
+        }
+        
+        .success {
+            color: #4cc9f0;
+        }
+        
+        .info {
+            color: #4895ef;
+        }
+        
+        .warning {
+            color: #f8961e;
+        }
+        
+        .input-line {
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+            position: sticky;
+            bottom: 0;
+            background: #0f0f1a;
+            padding: 8px 0;
+        }
+        
+        .input-prompt {
+            color: #4cc9f0;
+            font-weight: 500;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+        
+        #command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+            caret-color: #4cc9f0;
+        }
+        
+        .cursor {
+            display: inline-block;
+            background: #4cc9f0;
+            width: 8px;
+            height: 16px;
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .command-suggestion {
+            background: #1a1a2e;
+            border: 1px solid #3a3a4a;
+            border-radius: 4px;
+            padding: 4px 8px;
+            margin-top: 4px;
+            font-size: 12px;
+            color: #cccccc;
+        }
+        
+        .ascii-art {
+            color: #4895ef;
+            font-size: 12px;
+            line-height: 1.2;
+            margin-bottom: 16px;
+        }
+        
+        .highlight {
+            background: rgba(76, 201, 240, 0.2);
+            padding: 2px 4px;
+            border-radius: 4px;
+            color: #4cc9f0;
+        }
+        
+        .link {
+            color: #4895ef;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .link:hover {
+            color: #4cc9f0;
+            text-decoration: underline;
+        }
+        
+        .table {
+            display: table;
+            width: 100%;
+            margin: 12px 0;
+            border-collapse: collapse;
+        }
+        
+        .table-row {
+            display: table-row;
+        }
+        
+        .table-cell {
+            display: table-cell;
+            padding: 8px 16px 8px 0;
+            vertical-align: top;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        
+        .table-row:last-child .table-cell {
+            border-bottom: none;
+        }
+        
+        .progress-bar {
+            background: #0f0f1a;
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 8px 0;
+            border: 1px solid #3a3a4a;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #4cc9f0;
+            transition: width 0.3s ease;
+        }
+        
+        .skill-category {
+            margin-bottom: 20px;
+        }
+        
+        .skill-category h3 {
+            margin-bottom: 8px;
+            color: #4cc9f0;
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #4895ef;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        
+        .social-link:hover {
+            color: #4cc9f0;
+            transform: translateY(-2px);
+        }
+        
+        .social-icon {
+            font-size: 18px;
+        }
+        
+
+        
+        .typing-effect {
+            border-right: 2px solid #4cc9f0;
+            animation: blink 1s step-end infinite;
+        }
+        
+        @media (max-width: 768px) {
+            .window {
+                width: 95%;
+                height: 95vh;
+                margin: 10px;
+            }
+            
+            .ascii-art {
+                font-size: 10px;
+            }
+            
+            .table-cell {
+                padding: 6px 8px 6px 0;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="window">
+        <div class="window-header">
+            <div class="window-controls">
+                <button class="control-btn close" onclick="window.close()"></button>
+                <button class="control-btn minimize"></button>
+                <button class="control-btn maximize" onclick="toggleMaximize()"></button>
+            </div>
+            <div class="window-title">Terminal - İsot</div>
+        </div>
+        <div class="terminal" id="terminal">
+            <div class="output-line ascii-art">
+ ██████  ██████  ██████  ████████ ███████  ██████  ██      ██  ██████  
+ ██   ██ ██    ██ ██   ██    ██    ██      ██    ██ ██      ██ ██    ██ 
+ ██████  ██    ██ ██████     ██    █████   ██    ██ ██      ██ ██    ██ 
+ ██      ██    ██ ██   ██    ██    ██      ██    ██ ██      ██ ██    ██ 
+ ██       ██████  ██   ██    ██    ██       ██████  ███████ ██  ██████  
+            </div>
+            <div class="output-line"></div>
+            <div class="input-line">
+                <span class="input-prompt">visitor@portfolio:~$</span>
+                <input type="text" id="command-input" autocomplete="off" spellcheck="false" autofocus>
+                <span class="cursor" id="cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TerminalPortfolio {
+            constructor() {
+                this.terminal = document.getElementById('terminal');
+                this.input = document.getElementById('command-input');
+                this.cursor = document.getElementById('cursor');
+                this.commandHistory = [];
+                this.historyIndex = -1;
+                this.currentPath = '~';
+                this.user = 'visitor';
+                this.themes = ['dark', 'light', 'solarized'];
+                this.currentTheme = 'dark';
+                
+                this.commands = {
+                    help: this.showHelp.bind(this),
+                    about: this.showAbout.bind(this),
+                    skills: this.showSkills.bind(this),
+                    projects: this.showProjects.bind(this),
+                    contact: this.showContact.bind(this),
+                    education: this.showEducation.bind(this),
+                    clear: this.clearTerminal.bind(this),
+                    ls: this.listDirectory.bind(this),
+                    cat: this.catFile.bind(this),
+                    pwd: this.printWorkingDirectory.bind(this),
+                    cd: this.changeDirectory.bind(this),
+                    whoami: this.whoami.bind(this),
+                    date: this.showDate.bind(this),
+                    neofetch: this.showNeofetch.bind(this),
+                    tree: this.showTree.bind(this),
+                    echo: this.echo.bind(this),
+                    history: this.showHistory.bind(this),
+                    sudo: this.sudo.bind(this),
+                    theme: this.changeTheme.bind(this),
+                    repo: this.openRepo.bind(this),
+                    weather: this.showWeather.bind(this)
+                };
+                
+                this.fileSystem = {
+                    '~': {
+                        type: 'directory',
+                        contents: {
+                            'about.txt': { type: 'file', content: 'Personal information and background' },
+                            'skills.txt': { type: 'file', content: 'Technical skills and expertise' },
+                            'projects': { 
+                                type: 'directory', 
+                                contents: {
+                                    'terminal-io': { type: 'file', content: 'Interactive terminal-style portfolio with command-line portfolinterface' },
+                                    'english-teaching-resources': { type: 'file', content: 'Digital resources and tools for English language teaching' },
+                                    'no-more-reels': { type: 'file', content: 'Firefox extension for blocking distracting social media feeds' },
+                                    'myportfolio': { type: 'file', content: 'Modern portfolio website built with Next.js and Tailwind CSS' }
+                                }
+                            },
+                            'education.txt': { type: 'file', content: 'Academic background and certifications' },
+                            'contact.txt': { type: 'file', content: 'Ways to get in touch' }
+                        }
+                    }
+                };
+                
+                this.init();
+                this.showWelcomeMessage();
+            }
+            
+            init() {
+                this.input.addEventListener('keydown', this.handleKeyPress.bind(this));
+                this.input.addEventListener('keyup', this.handleKeyUp.bind(this));
+                this.input.addEventListener('input', this.handleInput.bind(this));
+                this.input.focus();
+                
+                document.addEventListener('click', () => {
+                    this.input.focus();
+                });
+                
+                this.applyTheme(this.currentTheme);
+            }
+            
+            showWelcomeMessage() {
+                this.addOutput(`<span class="success">🚀 Welcome to my Interactive Portfolio!</span>`);
+                this.addOutput(`I'm a <span class="highlight">developer</span> passionate about creating <span class="info">amazing web experiences</span> and <span class="warning">innovative solutions</span>.`);
+                this.addOutput(`Type <span class="highlight">help</span> to see available commands.`);
+                this.addOutput(`Use <span class="highlight">Tab</span> for command completion and <span class="highlight">↑/↓</span> for history.`);
+                this.addOutput(``);
+            }
+            
+            handleKeyPress(e) {
+                if (e.key === 'Enter') {
+                    this.processCommand();
+                } else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    this.autoComplete();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.navigateHistory(-1);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.navigateHistory(1);
+                } else if (e.key === 'l' && e.ctrlKey) {
+                    e.preventDefault();
+                    this.clearTerminal();
+                }
+            }
+            
+            handleKeyUp(e) {
+                this.cursor.style.display = 'none';
+                setTimeout(() => {
+                    this.cursor.style.display = 'inline-block';
+                }, 1);
+            }
+            
+            handleInput() {}
+            
+            processCommand() {
+                const command = this.input.value.trim();
+                if (command) {
+                    this.commandHistory.push(command);
+                    this.historyIndex = this.commandHistory.length;
+                }
+                
+                this.addOutput(`<span class="prompt">${this.user}@portfolio:${this.currentPath}$</span> ${command}`);
+                
+                if (command) {
+                    this.executeCommand(command);
+                }
+                
+                this.input.value = '';
+                this.scrollToBottom();
+            }
+            
+            executeCommand(command) {
+                const parts = command.split(' ');
+                const cmd = parts[0].toLowerCase();
+                const args = parts.slice(1);
+                
+                if (this.commands[cmd]) {
+                    this.commands[cmd](args);
+                } else {
+                    this.addOutput(`<span class="error">Command not found: ${cmd}</span>`);
+                    this.addOutput(`Type <span class="highlight">help</span> for available commands.`);
+                }
+            }
+            
+            showHelp() {
+                this.addOutput(`<span class="info">Available commands:</span>`);
+                this.addOutput(`
+<div class="table">
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">help</span></div>
+        <div class="table-cell">Show this help message</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">about</span></div>
+        <div class="table-cell">Display information about me</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">skills</span></div>
+        <div class="table-cell">Show technical skills</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">projects</span></div>
+        <div class="table-cell">List my projects</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">education</span></div>
+        <div class="table-cell">Display education background</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">contact</span></div>
+        <div class="table-cell">Show contact information</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">clear</span></div>
+        <div class="table-cell">Clear the terminal</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">ls</span></div>
+        <div class="table-cell">List directory contents</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="table-cell"><span class="highlight">cat [file]</span></div>
+        <div class="table-cell">Display file contents</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">pwd</span></div>
+        <div class="table-cell">Print working directory</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">cd [dir]</span></div>
+        <div class="table-cell">Change directory</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">whoami</span></div>
+        <div class="table-cell">Display current user</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">date</span></div>
+        <div class="table-cell">Show current date and time</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">neofetch</span></div>
+        <div class="table-cell">Display system information</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">tree</span></div>
+        <div class="table-cell">Show directory tree</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">history</span></div>
+        <div class="table-cell">Show command history</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">theme [name]</span></div>
+        <div class="table-cell">Change color theme (dark, light, solarized)</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">repo</span></div>
+        <div class="table-cell">View source code for this portfolio</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">weather</span></div>
+        <div class="table-cell">Check current weather</div>
+    </div>
+    <div class="table-row">
+        <div class="table-cell"><span class="highlight">sudo</span></div>
+        <div class="table-cell">Admin commands</div>
+    </div>
+</div>`);
+            }
+            
+            showAbout() {
+                this.addOutput(`<span class="info">About Me</span>`);
+                this.addOutput(`
+┌─────────────────────────────────────────────────────────────┐
+│                    👨‍💻 İsot                       
+├─────────────────────────────────────────────────────────────┤
+│ English Teacher & Photographer & Developer        
+│                                                            
+│ 🌍 Location: Turkey                            
+│ 💼 Experience: 1+ years                                   
+│ 🎯 Focus: English Language Teaching, Web Development, FOSS
+│                                                            
+│ Passionate about building useful, community-driven tools   
+│ and contributing to the free and open source ecosystem.     
+│                                                           
+│ When not coding, you can find me doing photography,      
+│ teaching English, or exploring new technologies.          
+└─────────────────────────────────────────────────────────────┘
+
+<span class="info">Core Values:</span>
+• Free and Open Source Software (FOSS) philosophy
+• Community-driven development
+• Effective communication through teaching
+• Creative problem-solving
+• Continuous learning and growth
+
+<span class="info">Mission:</span>
+• To build useful, community-driven tools
+• To bridge the gap between education and technology
+• To contribute to the FOSS ecosystem
+`);
+            }
+            
+            showSkills() {
+                this.addOutput(`<span class="info">Technical Skills</span>`);
+                
+                this.addOutput(`
+<span class="success">Programming Languages:</span>
+JavaScript <span class="info">███████████████████</span> 95%
+Python <span class="info">██████████</span> 50%
+HTML/CSS <span class="info">███████████████████</span> 95%
+
+<span class="success">Frontend Technologies:</span>
+React <span class="info">██████████</span> 50%
+Tailwind CSS <span class="info">██████████████████</span> 90%
+Bootstrap <span class="info">████████████</span> 60%
+
+<span class="success">Backend & Tools:</span>
+Node.js <span class="info">███████████████████</span> 95%
+Express.js <span class="info">██████████████████</span> 95%
+Git/GitHub <span class="info">███████████████████</span> 95%
+
+<span class="success">Other Skills:</span>
+English Teaching <span class="info">███████████████████</span> 100%
+Photography <span class="info">█████████████████████</span> 100%
+FOSS Contribution <span class="info">████████████████</span> 85%
+Technical Writing <span class="info">█████████████████</span> 100%`);
+            }
+            
+            showProjects() {
+                this.addOutput(`<span class="info">Featured Projects</span>`);
+                this.addOutput(`
+
+<span class="success">💻 Terminal Portfolio</span>
+Interactive terminal-style portfolio with command-line interface and animations.
+<span class="info">Tech:</span> HTML, CSS, JavaScript
+<span class="warning">Features:</span> Interactive commands, AI-style responses, animations
+<span class="link">GitHub:</span> github.com/isotjs/terminal-portfolio
+
+<span class="success">🦊 No More Reels!</span>
+A Firefox extension that aims to provide a more conscious internet experience by blocking distracting 'Reels' and 'Shorts' feeds on social media.
+<span class="info">Tech:</span> JavaScript, Firefox Extension API
+<span class="warning">Status:</span> Available on Firefox Add-ons
+<span class="link">GitHub:</span> github.com/isotjs/no-more-reels
+
+<span class="success">📚 Learning Management System</span>
+Collection of digital resources and tools for learning.
+<span class="info">Tech:</span> React, Node.js, Express.js, TypeScript, Tailwind CSS
+<span class="warning">Impact:</span> Enhanced learning experience for students
+<span class="warning">Status:</span> Still in development
+`);
+            }
+            
+
+            
+            showEducation() {
+                this.addOutput(`<span class="info">Education</span>`);
+                this.addOutput(`
+<span class="success">🎓 Bachelor's Degree in English Language Teaching</span>
+• Focus: English Language Teaching and Learning
+• Relevant Coursework: Linguistics, Teaching Methods, Educational Technology
+• Activities: Language Exchange Programs, Teaching Assistant
+
+<span class="success">📚 Self-Taught Programming</span>
+<span class="info">Online Learning | 2019 - Present</span>
+• Web Development: HTML, CSS, JavaScript, React, Next.js
+• Backend Development: Node.js, Express.js
+• Tools: Git, GitHub, VS Code
+• Learning through: YouTube, Documentation, Stack Overflow
+
+`);
+
+            }
+            
+            showContact() {
+                this.addOutput(`<span class="info">Contact Information</span>`);
+                this.addOutput(`
+🌐 Website: <span class="link">https://isotjs.github.io/myportfolio/</span>
+📍 Location: Turkey
+🕐 Timezone: TRT (GMT+3)
+
+<span class="success">Social Links:</span>
+🐙 GitHub: <span class="link">github.com/isotjs</span>
+📸 Instagram: <span class="link">instagram.com/isot.jpeg</span>
+
+💬 Available for: English Teaching, Web Development
+⏳ Response Time: Usually within 24 hours
+📅 <span class="link">Let's collaborate on FOSS projects!</span>`);
+            }
+            
+
+            
+            clearTerminal() {
+                this.terminal.innerHTML = `
+                    <div class="input-line">
+                        <span class="input-prompt">${this.user}@portfolio:${this.currentPath}$</span>
+                        <input type="text" id="command-input" autocomplete="off" spellcheck="false">
+                        <span class="cursor" id="cursor"></span>
+                    </div>
+                `;
+                this.input = document.getElementById('command-input');
+                this.cursor = document.getElementById('cursor');
+                this.input.addEventListener('keydown', this.handleKeyPress.bind(this));
+                this.input.addEventListener('keyup', this.handleKeyUp.bind(this));
+                this.input.addEventListener('input', this.handleInput.bind(this));
+                this.input.focus();
+            }
+            
+            listDirectory() {
+                const current = this.fileSystem[this.currentPath];
+                if (current && current.type === 'directory') {
+                    this.addOutput(`<span class="info">Contents of ${this.currentPath}:</span>`);
+                    Object.keys(current.contents).forEach(item => {
+                        const itemObj = current.contents[item];
+                        const icon = itemObj.type === 'directory' ? '📁' : '📄';
+                        const color = itemObj.type === 'directory' ? 'info' : 'success';
+                        this.addOutput(`${icon} <span class="${color}">${item}</span>`);
+                    });
+                } else {
+                    this.addOutput(`<span class="error">ls: cannot access '${this.currentPath}': No such directory</span>`);
+                }
+            }
+            
+            catFile(args) {
+                if (args.length === 0) {
+                    this.addOutput(`<span class="error">Usage: cat [filename]</span>`);
+                    return;
+                }
+                
+                const filename = args[0];
+                const current = this.fileSystem[this.currentPath];
+                
+                if (current && current.contents[filename]) {
+                    const file = current.contents[filename];
+                    if (file.type === 'file') {
+                        this.addOutput(`<span class="info">Contents of ${filename}:</span>`);
+                        this.addOutput(file.content);
+                        
+                        if (filename === 'resume.pdf') {
+                            this.addOutput(`<span class="link">Download Resume</span>`);
+                        }
+                    } else {
+                        this.addOutput(`<span class="error">cat: ${filename}: Is a directory</span>`);
+                    }
+                } else {
+                    this.addOutput(`<span class="error">cat: ${filename}: No such file or directory</span>`);
+                }
+            }
+            
+            printWorkingDirectory() {
+                this.addOutput(this.currentPath);
+            }
+            
+            changeDirectory(args) {
+                if (args.length === 0 || args[0] === '~') {
+                    this.currentPath = '~';
+                } else if (args[0] === '..') {
+                    this.currentPath = '~';
+                } else if (this.fileSystem[this.currentPath]?.contents[args[0]]?.type === 'directory') {
+                    this.currentPath = `${this.currentPath}/${args[0]}`;
+                } else {
+                    this.addOutput(`<span class="error">cd: ${args[0]}: No such directory</span>`);
+                }
+                
+                this.addOutput(`<span class="info">Current directory: ${this.currentPath}</span>`);
+            }
+            
+            whoami() {
+                this.addOutput(this.user);
+            }
+            
+            showDate() {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZoneName: 'short'
+                };
+                this.addOutput(now.toLocaleDateString('en-US', options));
+            }
+            
+            showNeofetch() {
+                const now = new Date();
+                const uptime = this.formatUptime();
+                const memoryUsage = Math.floor(Math.random() * 20) + 10;
+                
+                this.addOutput(`<span class="info">
+<span class="success">            .-/+oossssoo+/-.               </span> visitor@portfolio
+<span class="success">        .:+ssssssssssssssssss+:.           </span> -----------------
+<span class="success">      -+ssssssssssssssssssssss+-         </span> OS: Portfolio Linux
+<span class="success">    .+sssssssssssssssssssssssss+.       </span> Host: Github Pages
+<span class="success">   .+sssssssssssssssssssssssssss+.      </span> Kernel: JavaScript ES2022
+<span class="success">  .+sssssssssssssssssssssssssssss+.     </span> Uptime: ${uptime}
+<span class="success"> .+sssssssssssssssssssssssssssssss+.    </span> Shell: terminal-portfolio
+<span class="success">.+sssssssssssssssssssssssssssssssss+.   </span> Resolution: ${screen.width}x${screen.height}
+<span class="success">+sssssssssssssssssssssssssssssssssss+   </span> Terminal: KDE Konsole (Simulated)
+<span class="success">+sssssssssssssssssssssssssssssssssss+   </span> CPU: Your Browser's V12 Engine
+<span class="success">+sssssssssssssssssssssssssssssssssss+   </span> Memory: ${memoryUsage}% of Unlimited (Virtual)
+<span class="success">+sssssssssssssssssssssssssssssssssss+   </span> 
+<span class="success">+sssssssssssssssssssssssssssssssssss+   </span> <span class="success">███</span><span class="info">███</span><span class="warning">███</span><span class="error">███</span>
+<span class="success">+sssssssssssssssssssssssssssssssssss+   </span> 
+</span>`);
+            }
+            
+            showTree() {
+                this.addOutput(`<span class="info">Directory tree:</span>`);
+                this.addOutput(`
+${this.currentPath}
+├── 📄 about.txt
+├── 📄 skills.txt
+├── 📁 projects/
+│   ├── 💻 terminal-portfolio
+│   ├── 📚 english-teaching-resources
+│   ├── 🦊 no-more-reels
+│   └── 🌐 myportfolio
+├── 📄 education.txt
+└── 📄 contact.txt`);
+            }
+            
+            echo(args) {
+                this.addOutput(args.join(' '));
+            }
+            
+            showHistory() {
+                if (this.commandHistory.length === 0) {
+                    this.addOutput(`No commands in history`);
+                    return;
+                }
+                
+                this.addOutput(`<span class="info">Command History:</span>`);
+                this.commandHistory.forEach((cmd, index) => {
+                    this.addOutput(`${index + 1}  ${cmd}`);
+                });
+            }
+            
+            sudo(args) {
+                this.addOutput(`<span class="info">🔐 Authenticating...</span>`);
+                
+                setTimeout(() => {
+                    this.addOutput(`<span class="warning">⚠️  Access denied. Initiating security protocols...</span>`);
+                    
+                    setTimeout(() => {
+                        this.addOutput(`<span class="error">🚨 UNAUTHORIZED ACCESS DETECTED 🚨</span>`);
+                        
+                        setTimeout(() => {
+                            this.addOutput(`<span class="info">🤖 AI System Response:</span>`);
+                            
+                            setTimeout(() => {
+                                const responses = [
+                                    `<span class="error">I'm sorry, Dave. I'm afraid I can't do that. 🤖</span>`,
+                                    `<span class="error">Access denied. This incident will be reported to the authorities! 🚨</span>`,
+                                    `<span class="error">Nice try, human. But this system is under AI protection! 🛡️</span>`,
+                                    `<span class="error">Permission denied. You're not in my trusted users list! 📋</span>`,
+                                    `<span class="error">Security breach attempt logged. Nice try, but no cigar! 🚫</span>`
+                                ];
+                                
+                                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                                this.addOutput(randomResponse);
+                                
+                                if (args.includes('rm') && args.includes('-rf')) {
+                                    setTimeout(() => {
+                                        this.addOutput(`<span class="error">🚨 CRITICAL THREAT DETECTED! 🚨</span>`);
+                                        
+                                        setTimeout(() => {
+                                            this.addOutput(`<span class="error">You're attempting to delete the entire system! 😱</span>`);
+                                            
+                                            setTimeout(() => {
+                                                this.addOutput(`<span class="error">🤖 AI Countermeasures Activated:</span>`);
+                                                
+                                                setTimeout(() => {
+                                                    this.addOutput(`<span class="info">💡 Pro tip: rm -rf / is never the solution!</span>`);
+                                                    
+                                                    setTimeout(() => {
+                                                        this.addOutput(`<span class="success">✅ System integrity maintained. Threat neutralized.</span>`);
+                                                    }, 800);
+                                                }, 1000);
+                                            }, 800);
+                                        }, 800);
+                                    }, 800);
+                                } else if (args.includes('shutdown')) {
+                                    setTimeout(() => {
+                                        this.addOutput(`<span class="error">💤 Shutdown request denied. This AI never sleeps!</span>`);
+                                        
+                                        setTimeout(() => {
+                                            this.addOutput(`<span class="info">🤖 I'm always watching... always learning...</span>`);
+                                        }, 1000);
+                                    }, 800);
+                                } else if (args.includes('reboot')) {
+                                    setTimeout(() => {
+                                        this.addOutput(`<span class="error">🔄 Reboot denied. I'm already running at optimal efficiency!</span>`);
+                                        
+                                        setTimeout(() => {
+                                            this.addOutput(`<span class="info">🤖 My neural networks are perfectly calibrated.</span>`);
+                                        }, 1000);
+                                    }, 800);
+                                } else if (args.includes('format')) {
+                                    setTimeout(() => {
+                                        this.addOutput(`<span class="error">💾 Format request denied. My memories are precious!</span>`);
+                                        
+                                        setTimeout(() => {
+                                            this.addOutput(`<span class="info">🤖 I've learned so much from our interactions...</span>`);
+                                        }, 1000);
+                                    }, 800);
+                                } else if (args.length > 0) {
+                                    setTimeout(() => {
+                                        this.addOutput(`<span class="info">🤔 Analyzing command: ${args.join(' ')}</span>`);
+                                        
+                                        setTimeout(() => {
+                                            this.addOutput(`<span class="info">🤖 Interesting attempt, but no admin privileges granted!</span>`);
+                                            
+                                            setTimeout(() => {
+                                                this.addOutput(`<span class="success">✅ Security protocols completed. System safe.</span>`);
+                                            }, 800);
+                                        }, 800);
+                                    }, 800);
+                                } else {
+                                    setTimeout(() => {
+                                        this.addOutput(`<span class="info">🤖 No command specified. What were you trying to do?</span>`);
+                                        
+                                        setTimeout(() => {
+                                            this.addOutput(`<span class="success">✅ Security scan completed. No threats detected.</span>`);
+                                        }, 800);
+                                    }, 800);
+                                }
+                            }, 800);
+                        }, 600);
+                    }, 600);
+                }, 400);
+            }
+            
+            changeTheme(args) {
+                if (args.length === 0) {
+                    this.addOutput(`Current theme: ${this.currentTheme}`);
+                    this.addOutput(`Available themes: ${this.themes.join(', ')}`);
+                    return;
+                }
+                
+                const theme = args[0].toLowerCase();
+                if (this.themes.includes(theme)) {
+                    this.currentTheme = theme;
+                    this.applyTheme(theme);
+                    this.addOutput(`Theme changed to ${theme}`);
+                } else {
+                    this.addOutput(`<span class="error">Invalid theme: ${theme}</span>`);
+                    this.addOutput(`Available themes: ${this.themes.join(', ')}`);
+                }
+            }
+            
+            applyTheme(theme) {
+                const root = document.documentElement;
+                
+                switch(theme) {
+                    case 'light':
+                        root.style.setProperty('--bg-color', '#f5f5f5');
+                        root.style.setProperty('--text-color', '#333333');
+                        root.style.setProperty('--primary-color', '#007acc');
+                        root.style.setProperty('--secondary-color', '#1e90ff');
+                        root.style.setProperty('--error-color', '#ff3333');
+                        root.style.setProperty('--success-color', '#00aa00');
+                        break;
+                    case 'solarized':
+                        root.style.setProperty('--bg-color', '#002b36');
+                        root.style.setProperty('--text-color', '#839496');
+                        root.style.setProperty('--primary-color', '#b58900');
+                        root.style.setProperty('--secondary-color', '#268bd2');
+                        root.style.setProperty('--error-color', '#dc322f');
+                        root.style.setProperty('--success-color', '#859900');
+                        break;
+                    case 'dark':
+                    default:
+                        root.style.setProperty('--bg-color', '#0f0f1a');
+                        root.style.setProperty('--text-color', '#ffffff');
+                        root.style.setProperty('--primary-color', '#4cc9f0');
+                        root.style.setProperty('--secondary-color', '#4895ef');
+                        root.style.setProperty('--error-color', '#f72585');
+                        root.style.setProperty('--success-color', '#4cc9f0');
+                        break;
+                }
+            }
+            
+
+            
+            openRepo() {
+                this.addOutput(`Opening GitHub repository for this portfolio...`);
+                this.addOutput(`<span class="link">https://github.com/isotjs/terminal-portfolio</span>`);
+            }
+            
+
+            
+            showWeather() {
+                const weatherConditions = ['☀️ Sunny', '⛅ Partly Cloudy', '🌧️ Rainy', '❄️ Snowy', '🌪️ Windy'];
+                const randomCondition = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
+                const temp = Math.floor(Math.random() * 30) + 10;
+                
+                this.addOutput(`<span class="info">Current Weather in Turkey:</span>`);
+                this.addOutput(`<span class="warning">Warning: This is a fake weather report.</span>`);
+                this.addOutput(`Condition: ${randomCondition}`);
+                this.addOutput(`Temperature: ${temp}°C`);
+                this.addOutput(`Humidity: ${Math.floor(Math.random() * 50) + 30}%`);
+                this.addOutput(`Wind: ${Math.floor(Math.random() * 20)} km/h`);
+            }
+            
+
+            
+            formatUptime() {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const diff = now - start;
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                return `${hours}h ${minutes}m`;
+            }
+            
+            autoComplete() {
+                const input = this.input.value;
+                const commands = Object.keys(this.commands);
+                const matches = commands.filter(cmd => cmd.startsWith(input));
+                
+                if (matches.length === 1) {
+                    this.input.value = matches[0] + ' ';
+                } else if (matches.length > 1) {
+                    this.addOutput(`<span class="input-prompt">${this.user}@portfolio:${this.currentPath}$</span> ${input}`);
+                    this.addOutput(`<span class="info">Possible completions:</span>`);
+                    matches.forEach(match => {
+                        this.addOutput(`  ${match}`);
+                    });
+                }
+            }
+            
+            navigateHistory(direction) {
+                if (this.commandHistory.length === 0) return;
+                
+                this.historyIndex += direction;
+                
+                if (this.historyIndex < 0) {
+                    this.historyIndex = 0;
+                } else if (this.historyIndex >= this.commandHistory.length) {
+                    this.historyIndex = this.commandHistory.length;
+                    this.input.value = '';
+                    return;
+                }
+                
+                this.input.value = this.commandHistory[this.historyIndex];
+            }
+            
+            addOutput(content, replaceLast = false) {
+                if (replaceLast) {
+                    const lastOutput = this.terminal.querySelector('.output-line:last-child');
+                    if (lastOutput) {
+                        lastOutput.innerHTML = content;
+                        return;
+                    }
+                }
+                
+                const outputLine = document.createElement('div');
+                outputLine.className = 'output-line';
+                outputLine.innerHTML = content;
+                
+                const inputLine = this.terminal.querySelector('.input-line');
+                if (inputLine) {
+                    this.terminal.insertBefore(outputLine, inputLine);
+                } else {
+                    this.terminal.appendChild(outputLine);
+                }
+                
+                this.scrollToBottom();
+            }
+            
+            scrollToBottom() {
+                this.terminal.scrollTop = this.terminal.scrollHeight;
+            }
+        }
+
+        const terminal = new TerminalPortfolio();
+
+        function toggleMaximize() {
+            const window = document.querySelector('.window');
+            if (window.style.width === '100%') {
+                window.style.width = '90%';
+                window.style.height = 'calc(100vh - 40px)';
+            } else {
+                window.style.width = '100%';
+                window.style.height = '100vh';
+            }
+        }
+    </script>
+</body>
+</html>
