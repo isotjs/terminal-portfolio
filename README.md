@@ -1,5 +1,7 @@
 # 🖥️ Terminal Portfolio - İsot
 
+![Terminal Portfolio Screenshot](./screenshot.png)
+
 An interactive terminal-style portfolio website that simulates a real command-line interface. Built with vanilla HTML, CSS, and JavaScript.
 
 ![Terminal Portfolio Preview](https://img.shields.io/badge/Status-Active-brightgreen)
